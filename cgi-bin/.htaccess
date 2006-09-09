@@ -1,0 +1,5 @@
+AuthUserFile /usr/local/AmexRptSys/etc/passwd
+AuthName "AMEX Reporting System"
+AuthType Basic
+require valid-user
+

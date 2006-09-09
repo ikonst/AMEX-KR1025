@@ -1,0 +1,37 @@
+-- This SQL file is just comments,  describing the order one should
+-- create tables to build the AMEX database.
+--
+-- 1.  Create the generic schema.  Look in ../bin/make_schema.pl
+-- You will probably run it like this:
+--
+-- make_schema.pl --config=../conf/KR1025.conf > /tmp/schema.sql
+--
+--  or possibly with  --dbtype=oracle,  or --dbtype=pg
+--
+-- 2.  Load /tmp/schema.sql
+--
+-- 3.  Load sic-codes.sql (in this directory);  check that the 
+--     version for your database is uncommented.
+--
+-- 4.  Take some sample data and turn it into SQL.  The program for
+-- doing this is ../bin/read_amex_data_file.pl.  You will probably run 
+-- it like this:
+--
+-- read_amex_data_file.pl amex_20020809.txt > /tmp/load-data.sql
+-- 
+--  again, possibly with --config=../conf/KR1025.conf 
+--                       --dbtype=oracle
+--  or similar.
+--
+-- 5.  Load /tmp/load-data.sql
+--
+-- 6.  Load blank_fillins.sql;  check that the version for your 
+--     database is uncommented.
+--
+-- 7.  Load custom_view.sql
+-- 
+-- Make some indexes.  Not sure what to do at the moment,  but here are
+-- some ideas:
+--   hash on DETAIL_BILLING_DATA.bill_date
+--   hash on DETAIL_BILLING_DATA.cardmem_acnt_num
+--   hash on DETAIL_BILLING_DATA.sic
