@@ -385,6 +385,7 @@ sub cobol_date_string_to_sql_date_string {
 #  die "Don't know how to convert $cobol_date_string to a date";
 }
 
+our %is_numeric_type = map { $_ => 1 } qw(FLOAT INT INTEGER);
 
 sub parse {
   my $self = shift;
@@ -413,11 +414,17 @@ sub parse {
       $text = "$package_load_timestamp,$datafile_linenumber";
     } else {
       $text = substr($line,$element->{"column_start"}-1,$element->{"bytelength"});
-      # now, adjustments to it,  multiplications, signum, etc.
-      $text *= 0.1 ** substr($line,$element->{"decimal_place_shift"}-1,1)
-	if ($element->{"decimal_place_shift"} =~ /^\d+$/);
-      $text *= (substr($line,$element->{"sign_pos"}-1,1)."1")
-	if ($element->{"sign_pos"} =~ /^\d+$/);
+      if ($is_numeric_type{$element->{"field_type"}}) {
+        if ($text !~ /^\s*\d+$/) {
+          $text = 'NULL';
+        } else {
+          # now, adjustments to it,  multiplications, signum, etc.
+          $text *= 0.1 ** substr($line,$element->{"decimal_place_shift"}-1,1)
+          if ($element->{"decimal_place_shift"} =~ /^\d+$/);
+          $text *= (substr($line,$element->{"sign_pos"}-1,1)."1")
+          if ($element->{"sign_pos"} =~ /^\d+$/);
+        }
+      }
     }
     $table_name = $element->{"table_name"};
     $column_name = $element->{"field_name"};
@@ -431,9 +438,15 @@ sub parse {
       #print STDERR "date = '$text'  (line $datafile_linenumber,  $table_name.$column_name)\n";
       $text = &cobol_date_string_to_sql_date_string($text);
       if ($text eq 'NULL') {
-	$inserts->{$table_name}->{$column_name} = "NULL";
+        $inserts->{$table_name}->{$column_name} = "NULL";
       } else {
-	$inserts->{$table_name}->{$column_name} = "'$text'";
+        $inserts->{$table_name}->{$column_name} = "'$text'";
+      }
+    } elsif ($is_numeric_type{$element->{"field_type"}}) {
+      if ($text eq 'NULL') {
+        $inserts->{$table_name}->{$column_name} = "NULL";
+      } else {
+        $inserts->{$table_name}->{$column_name} = $text;
       }
     } else {
       $inserts->{$table_name}->{$column_name} = $text;
@@ -479,7 +492,7 @@ This function returns a list of FlatTextSchema::Records
 
 sub read_data_file {
   my $self = shift;
-  my $filename = shift;
+  my $filename = shift || die "No filename set";
   my @results = ();
   open(DATAFILE,$filename) || die "Can't open $filename";
   my $line;
